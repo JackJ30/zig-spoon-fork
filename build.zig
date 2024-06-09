@@ -6,7 +6,7 @@ pub fn build(b: *Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     const spoon_mod = b.addModule("spoon", .{
-        .root_source_file = .{ .path = "import.zig" },
+        .root_source_file = b.path("import.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -15,7 +15,7 @@ pub fn build(b: *Build) !void {
 
     const tests = b.addTest(
         .{
-            .root_source_file = .{ .path = "test_main.zig" },
+            .root_source_file = b.path("test_main.zig"),
             .target = target,
             .optimize = optimize,
         },
@@ -27,7 +27,7 @@ pub fn build(b: *Build) !void {
         const exe = b.addExecutable(
             .{
                 .name = "menu",
-                .root_source_file = .{ .path = "example/menu.zig" },
+                .root_source_file = b.path("example/menu.zig"),
                 .target = target,
                 .optimize = optimize,
             },
@@ -40,7 +40,7 @@ pub fn build(b: *Build) !void {
         const exe = b.addExecutable(
             .{
                 .name = "menu-libc",
-                .root_source_file = .{ .path = "example/menu.zig" },
+                .root_source_file = b.path("example/menu.zig"),
                 .target = target,
                 .optimize = optimize,
             },
@@ -54,7 +54,7 @@ pub fn build(b: *Build) !void {
         const exe = b.addExecutable(
             .{
                 .name = "input-demo",
-                .root_source_file = .{ .path = "example/input-demo.zig" },
+                .root_source_file = b.path("example/input-demo.zig"),
                 .target = target,
                 .optimize = optimize,
             },
@@ -67,7 +67,7 @@ pub fn build(b: *Build) !void {
         const exe = b.addExecutable(
             .{
                 .name = "colours",
-                .root_source_file = .{ .path = "example/colours.zig" },
+                .root_source_file = b.path("example/colours.zig"),
                 .target = target,
                 .optimize = optimize,
             },
@@ -80,7 +80,7 @@ pub fn build(b: *Build) !void {
         const exe = b.addExecutable(
             .{
                 .name = "table-256-colours",
-                .root_source_file = .{ .path = "example/table-256-colours.zig" },
+                .root_source_file = b.path("example/table-256-colours.zig"),
                 .target = target,
                 .optimize = optimize,
             },
