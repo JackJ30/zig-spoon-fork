@@ -2,7 +2,7 @@ const std = @import("std");
 const heap = std.heap;
 const math = std.math;
 const mem = std.mem;
-const os = std.os;
+const os = std.posix.system;
 
 const spoon = @import("spoon");
 
@@ -13,9 +13,9 @@ var cursor: usize = 0;
 
 pub fn main() !void {
     try term.init(.{});
-    defer term.deinit();
+    try term.deinit();
 
-    try os.sigaction(os.SIG.WINCH, &os.Sigaction{
+    try std.posix.sigaction(os.SIG.WINCH, &os.Sigaction{
         .handler = .{ .handler = handleSigWinch },
         .mask = os.empty_sigset,
         .flags = 0,
@@ -38,7 +38,7 @@ pub fn main() !void {
 
     var buf: [16]u8 = undefined;
     while (loop) {
-        _ = try os.poll(&fds, -1);
+        _ = try std.posix.poll(&fds, -1);
 
         const read = try term.readInput(&buf);
         var it = spoon.inputParser(buf[0..read]);

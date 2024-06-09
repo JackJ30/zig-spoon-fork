@@ -19,13 +19,12 @@ const std = @import("std");
 const ascii = std.ascii;
 const io = std.io;
 const mem = std.mem;
-const os = std.os;
+const os = std.posix.system;
+const WriteError = std.posix.WriteError;
+const OpenError = std.posix.OpenError;
 const unicode = std.unicode;
 const debug = std.debug;
 const math = std.math;
-
-// Workaround for bad libc integration of zigs std.
-const constants = if (builtin.link_libc and builtin.os.tag == .linux) os.linux else os.system;
 
 const Attribute = @import("Attribute.zig");
 const spells = @import("spells.zig");
@@ -59,7 +58,7 @@ currently_rendering: bool = false,
 tty: ?os.fd_t = null,
 
 /// Dumb writer. Don't use.
-const Writer = io.Writer(os.fd_t, os.WriteError, os.write);
+const Writer = io.Writer(os.fd_t, WriteError, std.posix.write);
 fn writer(self: Self) Writer {
     return .{ .context = self.tty.? };
 }
@@ -73,12 +72,13 @@ fn bufferedWriter(self: Self) BufferedWriter {
 pub fn init(self: *Self, term_config: TermConfig) !void {
     // Only allow a single successful call to init.
     debug.assert(self.tty == null);
+    const flags = os.O{ .ACCMODE = std.posix.ACCMODE.RDWR };
     self.* = .{
-        .tty = try os.open(term_config.tty_name, constants.O.RDWR, 0),
+        .tty = try std.posix.open(term_config.tty_name, flags, 0),
     };
 }
 
-pub fn deinit(self: *Self) void {
+pub fn deinit(self: *Self) !void {
     debug.assert(!self.currently_rendering);
 
     // Allow multiple calls to deinit, even if init never succeeded. This makes
@@ -88,7 +88,7 @@ pub fn deinit(self: *Self) void {
     // It's probably a good idea to cook the terminal on exit.
     if (!self.cooked) self.cook() catch {};
 
-    os.close(self.tty.?);
+    std.posix.close(self.tty.?);
     self.tty = null;
 }
 
@@ -96,7 +96,7 @@ pub fn readInput(self: *Self, buffer: []u8) !usize {
     debug.assert(self.tty != null);
     debug.assert(!self.currently_rendering);
     debug.assert(!self.cooked);
-    return try os.read(self.tty.?, buffer);
+    return try std.posix.read(self.tty.?, buffer);
 }
 
 /// Enter raw mode.
@@ -111,11 +111,10 @@ pub fn uncook(self: *Self, config: AltScreenConfig) !void {
     // https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html.
     // TODO: IUTF8 ?
 
-    self.cooked_termios = try os.tcgetattr(self.tty.?);
+    self.cooked_termios = try std.posix.tcgetattr(self.tty.?);
     errdefer self.cook() catch {};
 
     var raw = self.cooked_termios;
-
     //   ECHO: Stop the terminal from displaying pressed keys.
     // ICANON: Disable canonical ("cooked") mode. Allows us to read inputs
     //         byte-wise instead of line-wise.
@@ -123,10 +122,7 @@ pub fn uncook(self: *Self, config: AltScreenConfig) !void {
     //         can handle them as normal escape sequences.
     // IEXTEN: Disable input preprocessing. This allows us to handle Ctrl-V,
     //         which would otherwise be intercepted by some terminals.
-    raw.lflag &= ~@as(
-        constants.tcflag_t,
-        constants.ECHO | constants.ICANON | constants.ISIG | constants.IEXTEN,
-    );
+    raw.lflag = os.tc_lflag_t{ .ECHO = false, .ICANON = false, .ISIG = false, .IEXTEN = false };
 
     //   IXON: Disable software control flow. This allows us to handle Ctrl-S
     //         and Ctrl-Q.
@@ -138,25 +134,34 @@ pub fn uncook(self: *Self, config: AltScreenConfig) !void {
     //         remotely modern.
     // ISTRIP: Disable stripping the 8th bit of characters. Likely has no effect
     //         on anything remotely modern.
-    raw.iflag &= ~@as(
-        constants.tcflag_t,
-        constants.IXON | constants.ICRNL | constants.BRKINT | constants.INPCK | constants.ISTRIP,
-    );
+    raw.iflag = os.tc_iflag_t{
+        .IXON = false,
+        .ICRNL = false,
+        .BRKINT = false,
+        .INPCK = false,
+        .ISTRIP = false,
+    };
 
     // Disable output processing. Common output processing includes prefixing
     // newline with a carriage return.
-    raw.oflag &= ~@as(constants.tcflag_t, constants.OPOST);
+    raw.oflag = os.tc_oflag_t{
+        .OPOST = false,
+    };
 
     // Set the character size to 8 bits per byte. Likely has no efffect on
     // anything remotely modern.
-    raw.cflag |= constants.CS8;
+    raw.cflag = os.tc_cflag_t{
+        .CSIZE = os.CSIZE.CS8,
+    };
 
     // With these settings, the read syscall will immediately return when it
     // can't get any bytes. This allows poll to drive our loop.
-    raw.cc[constants.V.TIME] = 0;
-    raw.cc[constants.V.MIN] = 0;
+    // os.V.TIME is index 5
+    raw.cc[5] = 0;
+    // os.V.MIN is index 6
+    raw.cc[6] = 0;
 
-    try os.tcsetattr(self.tty.?, .FLUSH, raw);
+    try std.posix.tcsetattr(self.tty.?, .FLUSH, raw);
 
     var bufwriter = self.bufferedWriter();
     const wrtr = bufwriter.writer();
@@ -203,17 +208,17 @@ pub fn cook(self: *Self) !void {
     );
     try bufwriter.flush();
 
-    try os.tcsetattr(self.tty.?, .FLUSH, self.cooked_termios);
+    try std.posix.tcsetattr(self.tty.?, .FLUSH, self.cooked_termios);
 }
 
 pub fn fetchSize(self: *Self) !void {
     debug.assert(self.tty != null);
 
     if (self.cooked) return;
-    var size = mem.zeroes(constants.winsize);
-    const err = os.system.ioctl(self.tty.?, constants.T.IOCGWINSZ, @intFromPtr(&size));
-    if (os.errno(err) != .SUCCESS) {
-        return os.unexpectedErrno(@as(os.system.E, @enumFromInt(err)));
+    var size = mem.zeroes(os.winsize);
+    const err = os.ioctl(self.tty.?, os.T.IOCGWINSZ, @intFromPtr(&size));
+    if (std.posix.errno(err) != .SUCCESS) {
+        return std.posix.unexpectedErrno(@as(os.E, @enumFromInt(err)));
     }
     self.height = size.ws_row;
     self.width = size.ws_col;

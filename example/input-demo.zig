@@ -1,7 +1,7 @@
 const std = @import("std");
 const mem = std.mem;
 const heap = std.heap;
-const os = std.os;
+const os = std.os.linux;
 const unicode = std.unicode;
 
 const spoon = @import("spoon");
@@ -15,29 +15,29 @@ var empty = true;
 pub fn main() !void {
     const force_legacy = blk: {
         var i: usize = 1;
-        while (i < os.argv.len) : (i += 1) {
-            if (mem.eql(u8, mem.span(os.argv[i]), "--force-legacy")) break :blk true;
+        while (i < std.os.argv.len) : (i += 1) {
+            if (mem.eql(u8, mem.span(std.os.argv[i]), "--force-legacy")) break :blk true;
         }
         break :blk false;
     };
     const mouse = blk: {
         var i: usize = 1;
-        while (i < os.argv.len) : (i += 1) {
-            if (mem.eql(u8, mem.span(os.argv[i]), "--mouse")) break :blk true;
+        while (i < std.os.argv.len) : (i += 1) {
+            if (mem.eql(u8, mem.span(std.os.argv[i]), "--mouse")) break :blk true;
         }
         break :blk false;
     };
 
     try term.init(.{});
-    defer term.deinit();
+    try term.deinit();
 
-    try os.sigaction(os.SIG.WINCH, &os.Sigaction{
+    try std.posix.sigaction(os.SIG.WINCH, &os.Sigaction{
         .handler = .{ .handler = handleSigWinch },
         .mask = os.empty_sigset,
         .flags = 0,
     }, null);
 
-    var fds: [1]os.pollfd = undefined;
+    var fds: [1]std.posix.pollfd = undefined;
     fds[0] = .{
         .fd = term.tty.?,
         .events = os.POLL.IN,
@@ -54,7 +54,7 @@ pub fn main() !void {
     try render();
 
     while (loop) {
-        _ = try os.poll(&fds, -1);
+        _ = try std.posix.poll(&fds, -1);
 
         read = try term.readInput(&buf);
         empty = false;
