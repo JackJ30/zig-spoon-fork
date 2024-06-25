@@ -1,7 +1,7 @@
 const std = @import("std");
 const mem = std.mem;
 const heap = std.heap;
-const os = std.os.linux;
+const os = std.posix;
 const argv = std.process.ArgIteratorPosix;
 const unicode = std.unicode;
 
