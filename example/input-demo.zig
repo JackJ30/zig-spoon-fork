@@ -1,7 +1,7 @@
 const std = @import("std");
 const mem = std.mem;
 const heap = std.heap;
-const os = std.posix;
+const posix = std.posix;
 const argv = std.process.ArgIteratorPosix;
 const unicode = std.unicode;
 
@@ -32,13 +32,13 @@ pub fn main() !void {
     try term.init(.{});
     try term.deinit();
 
-    try std.posix.sigaction(os.SIG.WINCH, &os.Sigaction{
+    try posix.sigaction(os.SIG.WINCH, &os.Sigaction{
         .handler = .{ .handler = handleSigWinch },
         .mask = os.empty_sigset,
         .flags = 0,
     }, null);
 
-    var fds: [1]std.posix.pollfd = undefined;
+    var fds: [1]posix.pollfd = undefined;
     fds[0] = .{
         .fd = term.tty.?,
         .events = os.POLL.IN,
@@ -55,7 +55,7 @@ pub fn main() !void {
     try render();
 
     while (loop) {
-        _ = try std.posix.poll(&fds, -1);
+        _ = try posix.poll(&fds, -1);
 
         read = try term.readInput(&buf);
         empty = false;
