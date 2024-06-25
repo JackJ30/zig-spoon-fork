@@ -2,6 +2,7 @@ const std = @import("std");
 const mem = std.mem;
 const heap = std.heap;
 const os = std.os.linux;
+const argv = std.process.ArgIteratorPosix;
 const unicode = std.unicode;
 
 const spoon = @import("spoon");
@@ -15,15 +16,15 @@ var empty = true;
 pub fn main() !void {
     const force_legacy = blk: {
         var i: usize = 1;
-        while (i < std.os.argv.len) : (i += 1) {
-            if (mem.eql(u8, mem.span(std.os.argv[i]), "--force-legacy")) break :blk true;
+        while (i < argv.len) : (i += 1) {
+            if (mem.eql(u8, mem.span(argv[i]), "--force-legacy")) break :blk true;
         }
         break :blk false;
     };
     const mouse = blk: {
         var i: usize = 1;
-        while (i < std.os.argv.len) : (i += 1) {
-            if (mem.eql(u8, mem.span(std.os.argv[i]), "--mouse")) break :blk true;
+        while (i < argv.len) : (i += 1) {
+            if (mem.eql(u8, mem.span(argv[i]), "--mouse")) break :blk true;
         }
         break :blk false;
     };
