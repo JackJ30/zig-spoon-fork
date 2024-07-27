@@ -115,51 +115,65 @@ pub fn uncook(self: *Self, config: AltScreenConfig) !void {
     errdefer self.cook() catch {};
 
     var raw = self.cooked_termios;
-    //   ECHO: Stop the terminal from displaying pressed keys.
-    // ICANON: Disable canonical ("cooked") mode. Allows us to read inputs
-    //         byte-wise instead of line-wise.
-    //   ISIG: Disable signals for Ctrl-C (SIGINT) and Ctrl-Z (SIGTSTP), so we
-    //         can handle them as normal escape sequences.
-    // IEXTEN: Disable input preprocessing. This allows us to handle Ctrl-V,
-    //         which would otherwise be intercepted by some terminals.
-    raw.lflag = os.tc_lflag_t{ .ECHO = false, .ICANON = false, .ISIG = false, .IEXTEN = false };
 
-    //   IXON: Disable software control flow. This allows us to handle Ctrl-S
-    //         and Ctrl-Q.
-    //  ICRNL: Disable converting carriage returns to newlines. Allows us to
-    //         handle Ctrl-J and Ctrl-M.
-    // BRKINT: Disable converting sending SIGINT on break conditions. Likely has
-    //         no effect on anything remotely modern.
-    //  INPCK: Disable parity checking. Likely has no effect on anything
-    //         remotely modern.
-    // ISTRIP: Disable stripping the 8th bit of characters. Likely has no effect
-    //         on anything remotely modern.
+    raw.lflag = os.tc_lflag_t{
+        // Stop the terminal from displaying pressed keys.
+        .ECHO = false,
+
+        // Disable canonical ("cooked") mode. Allows us to read inputs
+        // byte-wise instead of line-wise.
+        .ICANON = false,
+
+        // Disable signals for Ctrl-C (SIGINT) and Ctrl-Z (SIGTSTP),
+        // so we can handle them as normal escape sequences.
+        .ISIG = false,
+
+        // Disable input preprocessing. This allows us to handle
+        // Ctrl-V, which would otherwise be intercepted by some
+        // terminals.
+        .IEXTEN = false,
+    };
+
     raw.iflag = os.tc_iflag_t{
+        // Disable software control flow. This allows us to handle
+        // Ctrl-S and Ctrl-Q.
         .IXON = false,
+
+        // Disable converting carriage returns to newlines. Allows us
+        // to handle Ctrl-J and Ctrl-M.
         .ICRNL = false,
+
+        // Disable converting sending SIGINT on break
+        // conditions. Likely has no effect on anything remotely
+        // modern.
         .BRKINT = false,
+
+        // Disable parity checking. Likely has no effect on anything
+        // remotely modern.
         .INPCK = false,
+
+        // Disable stripping the 8th bit of characters. Likely has no
+        // effect on anything remotely modern.
         .ISTRIP = false,
     };
 
-    // Disable output processing. Common output processing includes prefixing
-    // newline with a carriage return.
+    // Disable output processing. Common output processing includes
+    // prefixing newline with a carriage return.
     raw.oflag = os.tc_oflag_t{
         .OPOST = false,
     };
 
-    // Set the character size to 8 bits per byte. Likely has no efffect on
-    // anything remotely modern.
+    // Set the character size to 8 bits per byte. Likely has no
+    // efffect on anything remotely modern.
     raw.cflag = os.tc_cflag_t{
         .CSIZE = os.CSIZE.CS8,
     };
 
-    // With these settings, the read syscall will immediately return when it
-    // can't get any bytes. This allows poll to drive our loop.
-    // os.V.TIME is index 5
-    raw.cc[5] = 0;
-    // os.V.MIN is index 6
-    raw.cc[6] = 0;
+    // With these settings, the read syscall will immediately return
+    // when it can't get any bytes. This allows poll to drive our
+    // loop.
+    raw.cc[5] = 0; // os.V.TIME
+    raw.cc[6] = 0; // os.V.MIN
 
     try std.posix.tcsetattr(self.tty.?, .FLUSH, raw);
 
