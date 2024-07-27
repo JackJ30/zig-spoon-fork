@@ -2,8 +2,9 @@ const std = @import("std");
 const mem = std.mem;
 const heap = std.heap;
 const posix = std.posix;
-const argv = std.process.ArgIteratorPosix;
+const process = std.process;
 const unicode = std.unicode;
+const log = std.log;
 
 const spoon = @import("spoon");
 
@@ -14,34 +15,34 @@ var read: usize = undefined;
 var empty = true;
 
 pub fn main() !void {
-    const force_legacy = blk: {
-        var i: usize = 1;
-        while (i < argv.len) : (i += 1) {
-            if (mem.eql(u8, mem.span(argv[i]), "--force-legacy")) break :blk true;
+    var force_legacy: bool = false;
+    var mouse: bool = false;
+    var it = process.ArgIteratorPosix.init();
+    _ = it.next().?; // Skip argv[0].
+    while (it.next()) |arg| {
+        if (mem.eql(u8, arg, "--force-legacy")) {
+            force_legacy = true;
+        } else if (mem.eql(u8, arg, "--mouse")) {
+            mouse = true;
+        } else {
+            log.err("unknown option '{s}'", .{arg});
+            return;
         }
-        break :blk false;
-    };
-    const mouse = blk: {
-        var i: usize = 1;
-        while (i < argv.len) : (i += 1) {
-            if (mem.eql(u8, mem.span(argv[i]), "--mouse")) break :blk true;
-        }
-        break :blk false;
-    };
+    }
 
     try term.init(.{});
-    try term.deinit();
+    defer term.deinit() catch {};
 
-    try posix.sigaction(os.SIG.WINCH, &os.Sigaction{
+    try posix.sigaction(posix.SIG.WINCH, &posix.Sigaction{
         .handler = .{ .handler = handleSigWinch },
-        .mask = os.empty_sigset,
+        .mask = posix.empty_sigset,
         .flags = 0,
     }, null);
 
     var fds: [1]posix.pollfd = undefined;
     fds[0] = .{
         .fd = term.tty.?,
-        .events = os.POLL.IN,
+        .events = posix.POLL.IN,
         .revents = undefined,
     };
 
@@ -199,12 +200,4 @@ fn render() !void {
 fn handleSigWinch(_: c_int) callconv(.C) void {
     term.fetchSize() catch {};
     render() catch {};
-}
-
-/// Custom panic handler, so that we can try to cook the terminal on a crash,
-/// as otherwise all messages will be mangled.
-pub fn panic(msg: []const u8, trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
-    @setCold(true);
-    term.cook() catch {};
-    std.builtin.default_panic(msg, trace, ret_addr);
 }
