@@ -214,6 +214,7 @@ pub fn cook(self: *Self) !void {
             spells.disable_mouse_tracking ++
             spells.clear ++
             spells.leave_alt_buffer ++
+            spells.enable_auto_wrap ++
             spells.restore_screen ++
             spells.restore_cursor_position ++
             spells.show_cursor ++
