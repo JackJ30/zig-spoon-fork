@@ -6,10 +6,11 @@ sources:
   - https://git.sr.ht/~leon_plickat/zig-spoon
 tasks:
   - install_deps: |
-      wget -q https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz
-      tar -xvf zig-linux-x86_64-0.13.0.tar.xz 1>/dev/null
-      sudo mv zig-linux-x86_64-0.13.0/zig /usr/bin/
-      sudo mv zig-linux-x86_64-0.13.0/lib /usr/lib/zig
+      _zigversion=0.14.0
+      wget -q https://ziglang.org/download/$_zigversion/zig-linux-x86_64-$_zigversion.tar.xz
+      tar -xvf zig-linux-x86_64-$_zigversion.tar.xz 1>/dev/null
+      sudo mv zig-linux-x86_64-$_zigversion/zig /usr/bin/
+      sudo mv zig-linux-x86_64-$_zigversion/lib /usr/lib/zig
   - build: |
       cd zig-spoon
       zig build

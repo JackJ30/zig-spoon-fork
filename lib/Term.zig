@@ -230,13 +230,13 @@ pub fn fetchSize(self: *Self) !void {
     debug.assert(self.tty != null);
 
     if (self.cooked) return;
-    var size = mem.zeroes(os.winsize);
+    var size = mem.zeroes(std.posix.winsize);
     const err = os.ioctl(self.tty.?, os.T.IOCGWINSZ, @intFromPtr(&size));
     if (std.posix.errno(err) != .SUCCESS) {
         return std.posix.unexpectedErrno(@as(os.E, @enumFromInt(err)));
     }
-    self.height = size.ws_row;
-    self.width = size.ws_col;
+    self.height = size.row;
+    self.width = size.col;
 }
 
 /// Set window title using OSC 2. Shall not be called while rendering.

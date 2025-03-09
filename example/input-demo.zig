@@ -33,7 +33,7 @@ pub fn main() !void {
     try term.init(.{});
     defer term.deinit() catch {};
 
-    try posix.sigaction(posix.SIG.WINCH, &posix.Sigaction{
+    posix.sigaction(posix.SIG.WINCH, &posix.Sigaction{
         .handler = .{ .handler = handleSigWinch },
         .mask = posix.empty_sigset,
         .flags = 0,

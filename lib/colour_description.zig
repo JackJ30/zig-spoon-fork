@@ -114,7 +114,7 @@ test "parse colours string (bad input)" {
 
 const colour_names = blk: {
     @setEvalBranchQuota(100000);
-    break :blk std.StaticStringMap(Colour).initComptime(.{
+    break :blk std.StaticStringMap(Colour).initComptime([_]struct { []const u8, Colour }{
         // Terminal colours.
         .{ "none", .none },
         .{ "black", .black },

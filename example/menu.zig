@@ -15,7 +15,7 @@ pub fn main() !void {
     try term.init(.{});
     defer term.deinit() catch {};
 
-    try std.posix.sigaction(os.SIG.WINCH, &os.Sigaction{
+    std.posix.sigaction(os.SIG.WINCH, &os.Sigaction{
         .handler = .{ .handler = handleSigWinch },
         .mask = os.empty_sigset,
         .flags = 0,
