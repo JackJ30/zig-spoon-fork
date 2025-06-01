@@ -97,6 +97,9 @@ pub fn parseInputDescription(str: []const u8) !Input {
         } else if (mem.eql(u8, buf, "enter") or mem.eql(u8, buf, "return")) {
             ret.content = .{ .codepoint = '\n' };
             break;
+        } else if (mem.eql(u8, buf, "tab")) {
+            ret.content = .{ .codepoint = '\t' };
+            break;
         } else if (mem.eql(u8, buf, "print")) {
             ret.content = .print;
             break;
