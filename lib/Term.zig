@@ -297,7 +297,30 @@ pub const RenderContext = struct {
     pub fn moveCursorTo(rc: *RenderContext, row: usize, col: usize) !void {
         debug.assert(rc.term.currently_rendering);
         const wrtr = rc.buffer.writer();
-        try wrtr.print(spells.move_cursor_fmt, .{ row + 1, col + 1 });
+        try wrtr.print(spells.move_cursor_to_fmt, .{ row + 1, col + 1 });
+    }
+
+    /// Move the cursor to the specified cell.
+    pub fn moveCursor(rc: *RenderContext, dl: isize, dc: isize) !void {
+        debug.assert(rc.term.currently_rendering);
+        const wrtr = rc.buffer.writer();
+
+        if (dl > 0) try wrtr.print(spells.move_cursor_down_fmt, .{dl}) else if (dl < 0) try wrtr.print(spells.move_cursor_up_fmt, .{-dl});
+        if (dc > 0) try wrtr.print(spells.move_cursor_right_fmt, .{dc}) else if (dc < 0) try wrtr.print(spells.move_cursor_left_fmt, .{-dc});
+    }
+
+    /// Move the cursor to the specified cell.
+    pub fn moveCursorToBeginning(rc: *RenderContext, dl: isize) !void {
+        debug.assert(rc.term.currently_rendering);
+        const wrtr = rc.buffer.writer();
+
+        if (dl > 0) {
+            try wrtr.print(spells.move_cursor_beginning_down_fmt, .{dl});
+        } else if (dl < 0) {
+            try wrtr.print(spells.move_cursor_beginning_up_fmt, .{-dl});
+        } else {
+            try wrtr.print("\r", .{});
+        }
     }
 
     /// Hide the cursor.

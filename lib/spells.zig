@@ -16,7 +16,15 @@
 
 pub const hide_cursor = "\x1B[?25l";
 pub const show_cursor = "\x1B[?25h";
-pub const move_cursor_fmt = "\x1B[{};{}H";
+pub const move_cursor_to_fmt = "\x1B[{};{}H";
+
+pub const move_cursor_up_fmt = "\x1B[{}A";
+pub const move_cursor_down_fmt = "\x1B[{}B";
+pub const move_cursor_right_fmt = "\x1B[{}C";
+pub const move_cursor_left_fmt = "\x1B[{}D";
+
+pub const move_cursor_beginning_up_fmt = "\x1B[{}F";
+pub const move_cursor_beginning_down_fmt = "\x1B[{}E";
 
 // https://sw.kovidgoyal.net/kitty/keyboard-protocol/
 // This enables an alternative input mode, that makes it possible, among
