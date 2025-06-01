@@ -181,8 +181,6 @@ pub fn uncook(self: *Self, config: AltScreenConfig) !void {
     const wrtr = bufwriter.writer();
     try wrtr.writeAll(
         spells.save_cursor_position ++
-            spells.save_cursor_position ++
-            spells.enter_alt_buffer ++
             spells.overwrite_mode ++
             spells.reset_auto_wrap ++
             spells.reset_auto_repeat ++
@@ -212,10 +210,7 @@ pub fn cook(self: *Self) !void {
         // tracking, asking the terminal to disable it should have no effect.
         spells.disable_kitty_keyboard ++
             spells.disable_mouse_tracking ++
-            spells.clear ++
-            spells.leave_alt_buffer ++
             spells.enable_auto_wrap ++
-            spells.restore_screen ++
             spells.restore_cursor_position ++
             spells.show_cursor ++
             spells.reset_attributes ++
